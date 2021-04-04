@@ -14,6 +14,37 @@ export default NextAuth({
     }),
   ],
   callbacks: {
+    async session(session) {
+      try {
+        //* 2 querys tem que ser true para que seja retornado os dados da subscription
+        /**
+         * 1 - Usuário tem que ter uma subscription
+         *   - Tenho que buscar o usuário comparando as refs armazenadas em userId na collection subscription
+         *   - Com a ref do user: aqui tenho que selecionar a ref do usuário buscando ele por email
+         * 2 - A subscription tem que está "active"
+         */
+        const userActiveSubscription = await fauna.query(
+          q.Get(
+            q.Intersection([
+              q.Match(
+                q.Index("subscription_by_user_ref"),
+                q.Select(
+                  "ref",
+                  q.Get(
+                    q.Match(q.Index("user_by_email"), q.Casefold(session.user.email))
+                  )
+                )
+              ),
+              q.Match(q.Index("subscription_by_status"), "active"),
+            ])
+          )
+        );
+
+        return { ...session, activeSubscription: userActiveSubscription };
+      } catch {
+        return { ...session, activeSubscription: null };
+      }
+    },
     async signIn(user, account, profile) {
       try {
         const { email } = user;
@@ -21,9 +52,7 @@ export default NextAuth({
         await fauna.query(
           q.If(
             q.Not(
-              q.Exists(
-                q.Match(q.Index("user_by_email"), q.Casefold(user.email))
-              )
+              q.Exists(q.Match(q.Index("user_by_email"), q.Casefold(user.email)))
             ),
             q.Create(q.Collection("users"), { data: { email } }),
             q.Get(q.Match(q.Index("user_by_email"), q.Casefold(user.email)))

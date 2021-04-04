@@ -3,30 +3,37 @@ import { getStripeJS } from "../../services/stripe-js";
 import { api } from "../../services/api";
 
 import styles from "./styles.module.scss";
+import { useRouter } from "next/router";
 
 interface SubscribeButtonProps {
   priceId: string;
 }
 
 export function SubscribeButton({ priceId }: SubscribeButtonProps) {
-  const [session] = useSession();
+  const [session]: any = useSession();
+  const router = useRouter();
 
   async function handleSubscribe() {
     if (!session) {
       signIn("github");
       return;
-    } else {
-      try {
-        const response = await api.post("/subscribe");
+    }
 
-        const { sessionId } = response.data;
+    if (session.activeSubscription) {
+      router.push("/posts");
+      return;
+    }
 
-        const stripe = await getStripeJS();
+    try {
+      const response = await api.post("/subscribe");
 
-        await stripe.redirectToCheckout({ sessionId });
-      } catch (err) {
-        alert(err.message);
-      }
+      const { sessionId } = response.data;
+
+      const stripe = await getStripeJS();
+
+      await stripe.redirectToCheckout({ sessionId });
+    } catch (err) {
+      alert(err.message);
     }
   }
 
