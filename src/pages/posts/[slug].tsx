@@ -37,7 +37,10 @@ export default function Post({ post }: PostProps) {
 
 //*Todas as paginas geradas com getStaticProps são publicas, por isso é melhor usar o serverSide
 //*Usuário precisa está logado && ter uma assinatura
-export const getServerSideProps: GetServerSideProps = async ({ req, params }) => {
+export const getServerSideProps: GetServerSideProps = async ({
+  req,
+  params,
+}) => {
   //*Usuário esta logado?
   const session: any = await getSession({ req }); //* next context
 
@@ -60,11 +63,14 @@ export const getServerSideProps: GetServerSideProps = async ({ req, params }) =>
     slug,
     title: RichText.asText(response.data.title),
     content: RichText.asHtml(response.data.content),
-    updatedAt: new Date(response.last_publication_date).toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    }),
+    updatedAt: new Date(response.last_publication_date).toLocaleDateString(
+      "pt-BR",
+      {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      }
+    ),
   };
 
   return { props: { post } };
